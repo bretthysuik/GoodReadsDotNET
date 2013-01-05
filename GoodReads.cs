@@ -1,24 +1,26 @@
-﻿using GoodReadsDotNET.Entities;
+﻿using GoodreadsDotNET.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Linq;
 
-namespace GoodReadsDotNET
+namespace GoodreadsDotNET
 {
-    public class GoodReads
+    public class Goodreads
     {
-        #region API URLs
+        #region API Endpoints
 
-        private const string BOOK_INFO = @"http://www.goodreads.com/book/{1}?format=xml&key={0}";
+        private const string BookInfo = @"http://www.Goodreads.com/book/show/{1}?format=xml&key={0}";
 
-        private const string SEARCH_BOOK = @"http://www.goodreads.com/search.xml?key={0}&q={1}";
+        private const string BookSearch = @"http://www.Goodreads.com/search.xml?key={0}&q={1}";
 
-        private const string AUTHOR_INFO = @"http://www.goodreads.com/author/show/{1}.xml?key={0}";
+        private const string AuthorInfo = @"http://www.Goodreads.com/author/show/{1}.xml?key={0}";
 
-        private const string SEARCH_AUTHOR = @"http://www.goodreads.com/api/author_url/{1}?key={0}";
+        private const string AuthorSearch = @"http://www.Goodreads.com/api/author_url/{1}?key={0}";
 
         #endregion
 
@@ -30,7 +32,7 @@ namespace GoodReadsDotNET
 
         #region Constructor
 
-        public GoodReads(string apiKey)
+        public Goodreads(string apiKey)
         {
             ApiKey = apiKey;
         }
@@ -43,23 +45,22 @@ namespace GoodReadsDotNET
         /// Search for a book using the title as the seach query.
         /// </summary>
         /// <param name="title">The title of the book.</param>
+        /// <param name="numResults">Limit to the first x number of results.</param>
         /// <returns>The collection of books matching the query.</returns>
-        public async Task<string> SearchForBook(string title)
+        public async Task<IEnumerable<Book>> SearchForBookAsync(string title, int numResults = 10)
         {
-            string url = String.Format(SEARCH_BOOK, ApiKey, FormatQuery(title));
-            string response = await GetXmlResponse(url);
-            // TODO: parse response
-            // TODO: return results
+            string url = String.Format(BookSearch, ApiKey, FormatQuery(title));
+            var response = await GetXmlResponse(url);
 
-            throw new NotImplementedException();
+            return XmlParser.ParseBookSearchResults(response, numResults);
         }
         
         /// <summary>
-        /// Seach for a book using the GoodReads ID as the seach query.
+        /// Seach for a book using the Goodreads ID as the seach query.
         /// </summary>
-        /// <param name="id">The GoodReads ID.</param>
+        /// <param name="id">The Goodreads ID.</param>
         /// <returns>The book.</returns>
-        public Book SearchForBook(int id)
+        public Book SearchForBookAsync(int id)
         {
             throw new NotImplementedException();
         }
@@ -68,20 +69,39 @@ namespace GoodReadsDotNET
         /// Search for an author using their name as the search query.
         /// </summary>
         /// <param name="name">The name of the author.</param>
-        /// <returns>The collection of authors matching the query.</returns>
-        public List<Author> SearchForAuthor(string name)
+        /// <returns>The author matching the query.</returns>
+        public async Task<Author> SearchForAuthorAsync(string name)
         {
-            throw new NotImplementedException();
+            string url = String.Format(AuthorSearch, ApiKey, FormatQuery(name));
+            var response = await GetXmlResponse(url);
+
+            return XmlParser.ParseAuthorSearchResults(response);
         }
 
         /// <summary>
-        /// Search for an author using the GoodReads ID as the search query.
+        /// Gets info about an author using its Goodreads ID.
         /// </summary>
-        /// <param name="id">The GoodReads ID.</param>
-        /// <returns>The author.</returns>
-        public Author SearchForAuthor(int id)
+        /// <param name="id">The author's Goodreads ID.</param>
+        /// <returns>The author's information as a new <see cref="Author"/> object.</returns>
+        public async Task<Author> GetAuthorInfoAsync(int id)
         {
-            throw new NotImplementedException();
+            string url = String.Format(AuthorInfo, ApiKey, id);
+            var response = await GetXmlResponse(url);
+
+            return XmlParser.ParseAuthorInfoResults(response);
+        }
+
+        /// <summary>
+        /// Gets info about a book using its Goodreads ID.
+        /// </summary>
+        /// <param name="id">The book's Goodreads ID.</param>
+        /// <returns>The book's information as a new <see cref="Book"/> object.</returns>
+        public async Task<Book> GetBookInfoAsync(int id)
+        {
+            string url = String.Format(BookInfo, ApiKey, id);
+            var response = await GetXmlResponse(url);
+
+            return XmlParser.ParseBookInfoResults(response);
         }
 
         #endregion
@@ -93,21 +113,23 @@ namespace GoodReadsDotNET
         /// </summary>
         /// <param name="query">The query string to format.</param>
         /// <returns>The formatted query.</returns>
-        public string FormatQuery(string query)
+        private string FormatQuery(string query)
         {
             return query.Replace(" ", "+");
         }
 
         /// <summary>
-        /// Gets the XML reponse after querying the GoodReads API.
+        /// Gets the XML reponse after querying the Goodreads API.
         /// </summary>
         /// <param name="url">The url to query.</param>
-        /// <returns>The XML repsonse.</returns>
-        internal static async Task<string> GetXmlResponse(string url)
+        /// <returns>The XML document containing the response data.</returns>
+        private async Task<XDocument> GetXmlResponse(string url)
         {
             using (var client = new HttpClient())
             {
-                return await client.GetStringAsync(url);
+                var responseStream = await client.GetStreamAsync(url);
+
+                return XDocument.Load(responseStream);
             }
         }
 

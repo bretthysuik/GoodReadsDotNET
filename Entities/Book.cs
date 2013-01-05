@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GoodReadsDotNET.Entities
+namespace GoodreadsDotNET.Entities
 {
     public class Book
     {
@@ -16,14 +16,14 @@ namespace GoodReadsDotNET.Entities
         public string Title { get; set; }
 
         /// <summary>
-        /// Gets or sets the book's GoodReads ID.
+        /// Gets or sets the book's Goodreads ID.
         /// </summary>
         public int ID { get; set; }
 
         /// <summary>
-        /// Gets or sets the book's plot summary.
+        /// Gets a brief description of the book.
         /// </summary>
-        public string PlotSummary { get; set; }
+        public string Description { get; set; }
 
         /// <summary>
         /// Gets or sets the number of pages.
@@ -31,9 +31,16 @@ namespace GoodReadsDotNET.Entities
         public int NumPages { get; set; }
 
         /// <summary>
-        /// Gets or sets the book's publication date.
+        /// Gets or sets the book's original publication date.
+        /// </summary>
+        public DateTime OriginalPublicationDate { get; set; }
+
+        /// <summary>
+        /// Gets the publication date of this editon of the book.
         /// </summary>
         public DateTime PublicationDate { get; set; }
+
+        public string Edition { get; set; }
 
         /// <summary>
         /// Gets or sets the publisher of the book.
@@ -53,14 +60,12 @@ namespace GoodReadsDotNET.Entities
         /// <summary>
         /// Gets or sets the book's author(s).
         /// </summary>
-        public List<Author> Author { get; set; }
+        public List<Author> Authors { get; set; }
 
         /// <summary>
         /// Gets or sets the series this book belongs to (if any).
         /// </summary>
         public Series Series { get; set; }
-
-        public int? NumInSeries { get; set; }
 
         /// <summary>
         /// Gets or sets the hyperlink to the book's cover.
@@ -68,35 +73,47 @@ namespace GoodReadsDotNET.Entities
         public string CoverLink { get; set; }
 
         /// <summary>
-        /// Gets or sets the hyperlink to the book's cover (small image).
+        /// Gets the hyperlink to the book's cover (small image).
         /// </summary>
         public string CoverSmallLink { get; set; }
 
         /// <summary>
-        /// Gets or sets the book's ISBN-10 code.
+        /// Gets the book's ISBN-10 code.
         /// </summary>
         public int Isbn10 { get; set; }
 
         /// <summary>
-        /// Gets or sets the book's ISBN-13 code.
+        /// Gets the book's ISBN-13 code.
         /// </summary>
-        public int Isbn13 { get; set; }
+        public long Isbn13 { get; set; }
 
         /// <summary>
-        /// Gets or sets the book's GoodReads link.
+        /// Gets the book's Goodreads link.
         /// </summary>
         public string Link { get; set; }
 
+        public string Format { get; set; }
+
         #endregion
 
-        #region Constructor
+        #region Constructors
 
-        public Book(string title, int id)
+        public Book()
+        {
+            Authors = new List<Author>();
+        }
+
+        public Book(string title, int id) : this()
         {
             Title = title;
             ID = id;
         }
 
         #endregion
+
+        public override string ToString()
+        {
+            return String.Format("{0} - {1}", this.Authors.First().Name, this.Title);
+        }
     }
 }
