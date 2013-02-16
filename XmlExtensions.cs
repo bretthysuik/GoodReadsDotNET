@@ -11,17 +11,26 @@ namespace GoodreadsDotNET
     {
         public static int IntValue(this XElement element)
         {
-            return int.Parse(element.Value);
+            if (String.IsNullOrWhiteSpace(element.Value))
+                return 0;
+            else
+                return int.Parse(element.Value);
         }
 
         public static long LongValue(this XElement element)
         {
-            return long.Parse(element.Value);
+            if (String.IsNullOrWhiteSpace(element.Value))
+                return 0;
+            else
+                return long.Parse(element.Value);
         }
 
         public static double DoubleValue(this XElement element)
         {
-            return double.Parse(element.Value);
+            if (String.IsNullOrWhiteSpace(element.Value))
+                return 0;
+            else
+                return double.Parse(element.Value);
         }
     }
 }

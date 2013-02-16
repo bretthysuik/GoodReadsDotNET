@@ -1,10 +1,8 @@
-﻿using GoodreadsDotNET.Entities;
+﻿using System.Text.RegularExpressions;
+using GoodreadsDotNET.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
 using System.Xml.Linq;
 
 namespace GoodreadsDotNET
@@ -12,9 +10,9 @@ namespace GoodreadsDotNET
     /// <summary>
     /// Parses Goodreads XML responses.
     /// </summary>
-    public static class XmlParser
+    internal static class XmlParser
     {
-        public static IEnumerable<Book> ParseBookSearchResults(XDocument response, int numResults)
+        internal static IEnumerable<Book> ParseBookSearchResults(XDocument response, int numResults)
         {
             var books = from book in response.Descendants("work").Take(numResults)
                         select ParseBook(book, book.Element("best_book"));
@@ -22,7 +20,7 @@ namespace GoodreadsDotNET
             return books;
         }
 
-        public static Author ParseAuthorSearchResults(XDocument response)
+        internal static Author ParseAuthorSearchResults(XDocument response)
         {
             var author = from a in response.Descendants("author")
                          select new Author(a.Element("name").Value, int.Parse(a.Attribute("id").Value), a.Element("link").Value);
@@ -30,7 +28,7 @@ namespace GoodreadsDotNET
             return author.First();
         }
 
-        public static Book ParseBookInfoResults(XDocument response)
+        internal static Book ParseBookInfoResults(XDocument response)
         {
             var book = (from b in response.Descendants("book")
                        select ParseBookInfo(b)).FirstOrDefault();
@@ -38,7 +36,7 @@ namespace GoodreadsDotNET
             return book;
         }
 
-        public static Author ParseAuthorInfoResults(XDocument response)
+        internal static Author ParseAuthorInfoResults(XDocument response)
         {
             var author = (from a in response.Descendants("author")
                          select ParseAuthor(a)).FirstOrDefault();
@@ -71,23 +69,23 @@ namespace GoodreadsDotNET
         {
             var book = new Book();
             book.ID = xmlBook.Element("id").IntValue();
-            book.Isbn10 = xmlBook.Element("isbn").IntValue();
-            book.Isbn13 = xmlBook.Element("isbn13").LongValue();
-            book.RatingsCount = xmlBook.Element("text_reviews_count").IntValue();
+            book.Isbn10 = xmlBook.Element("isbn").Value;
+            book.Isbn13 = xmlBook.Element("isbn13").Value;
             book.Title = xmlBook.Element("title").Value;
             book.CoverLink = xmlBook.Element("image_url").Value;
             book.CoverSmallLink = xmlBook.Element("small_image_url").Value;
             book.Link = xmlBook.Element("link").Value;
-            book.NumPages = xmlBook.Element("num_pages").IntValue();
+            book.PagesCount = xmlBook.Element("num_pages").IntValue();
             book.Format = xmlBook.Element("format").Value;
             book.Edition = xmlBook.Element("edition_information").Value;
             book.Publisher = xmlBook.Element("publisher").Value;
             book.PublicationDate = ParseDate(xmlBook, false);
             book.AverageRating = xmlBook.Element("average_rating").DoubleValue();
             book.RatingsCount = xmlBook.Element("ratings_count").IntValue();
-            book.Description = xmlBook.Element("description").Value;
-            book.Authors.AddRange(from authors in xmlBook.Descendants("authors")
-                                  select ParseAuthorBasic(authors.Element("author")));
+            book.Description = Regex.Replace(Regex.Replace(xmlBook.Element("description").Value, "<br />", Environment.NewLine), "<.+?>", "");
+            book.OriginalPublicationDate = ParseDate(xmlBook.Element("work"), true);
+            book.Authors.AddRange(from author in xmlBook.Elements("authors").Elements("author")
+                                  select ParseAuthorBasic(author));
             book.Series = (from series in xmlBook.Descendants("series")
                           select ParseSeriesBasic(series)).FirstOrDefault();
             return book;
@@ -95,6 +93,9 @@ namespace GoodreadsDotNET
 
         internal static DateTime ParseDate(XElement node, bool isOriginalPublicationDate)
         {
+            if (node == null)
+                return DateTime.MinValue;
+
             string q = "{0}publication_{1}";
             string original = isOriginalPublicationDate ? "original_" : "";
             int year, month, day;
@@ -102,7 +103,9 @@ namespace GoodreadsDotNET
             int.TryParse(node.Element(String.Format(q, original, "year")).Value, out year);
             int.TryParse(node.Element(String.Format(q, original, "month")).Value, out month);
             int.TryParse(node.Element(String.Format(q, original, "day")).Value, out day);
-
+            
+            if (year == 0)
+                return DateTime.MinValue;
             // Month/day were null in the XML response so default to 1
             if (month == 0 || day == 0)
                 return new DateTime(year, 1, 1);
@@ -114,10 +117,10 @@ namespace GoodreadsDotNET
         {
             var author = new Author();
             author = ParseAuthorBasic(xmlAuthor);
-            author.NumFans = xmlAuthor.Element("fans_count").IntValue();
+            author.FansCount = xmlAuthor.Element("fans_count").IntValue();
             author.About = xmlAuthor.Element("about").Value;
             // TODO: parse influences
-            author.NumWorks = xmlAuthor.Element("works_count").IntValue();
+            author.WorksCount = xmlAuthor.Element("works_count").IntValue();
             author.Gender = xmlAuthor.Element("gender").Value.ToGender();
             author.Hometown = xmlAuthor.Element("hometown").Value;
             author.DateOfBirth = DateTime.Parse(xmlAuthor.Element("born_at").Value);
@@ -150,7 +153,7 @@ namespace GoodreadsDotNET
             series.Title = xmlSeries.Element("title").Value.Trim();
             series.Description = xmlSeries.Element("description").Value.Trim();
             series.Note = xmlSeries.Element("note").Value.Trim();
-            series.Count = xmlSeries.Element("series_works_count").IntValue();
+            series.TotalCount = xmlSeries.Element("series_works_count").IntValue();
             series.PrimaryCount = xmlSeries.Element("primary_work_count").IntValue();
 
             return series;

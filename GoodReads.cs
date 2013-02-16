@@ -42,7 +42,7 @@ namespace GoodreadsDotNET
         #region Public Methods
 
         /// <summary>
-        /// Search for a book using the title as the seach query.
+        /// Searches for a book using the title as the seach query.
         /// </summary>
         /// <param name="title">The title of the book.</param>
         /// <param name="numResults">Limit to the first x number of results.</param>
@@ -54,19 +54,9 @@ namespace GoodreadsDotNET
 
             return XmlParser.ParseBookSearchResults(response, numResults);
         }
-        
-        /// <summary>
-        /// Seach for a book using the Goodreads ID as the seach query.
-        /// </summary>
-        /// <param name="id">The Goodreads ID.</param>
-        /// <returns>The book.</returns>
-        public Book SearchForBookAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
 
         /// <summary>
-        /// Search for an author using their name as the search query.
+        /// Searches for an author using their name as the search query.
         /// </summary>
         /// <param name="name">The name of the author.</param>
         /// <returns>The author matching the query.</returns>
